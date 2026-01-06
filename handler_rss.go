@@ -83,7 +83,7 @@ func handlerAgg(s *state, cmd command) error{
 }
 
 func handlerAddFeed(s *state, cmd command) error{
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) != 2 {
 		return fmt.Errorf("not enough args, usage <name> <url>")
 	}
 	name := cmd.Args[0]
@@ -109,7 +109,10 @@ func handlerAddFeed(s *state, cmd command) error{
 	if err != nil{
 		return fmt.Errorf("problem created feed in db: %v", err)
 	}
+	fmt.Println("Feed created sucessfully:")
 	printFeed(feed)
+	fmt.Println("=========================================")
+
 	return nil
 }
 
@@ -123,12 +126,18 @@ func printFeed(feed database.Feed){
 }
 
 func handlerFeeds(s *state, cmd command) error {
-	// fmt.Printf("UserName: %v\n", database.GetUser())
+
 	feeds, err := s.db.GetFeeds(context.Background())
 	if err != nil{
 		return fmt.Errorf("error getting feeds from db: %v", err)
 	}
 
+	if len(feeds) == 0 {
+		fmt.Println("No feeds found.")
+		return nil
+	}
+
+	fmt.Printf("Found %d feeds:\n", len(feeds))
 	for _, feed := range feeds {
 		printFeed(feed)
 		user, err := s.db.GetUserByID(context.Background(), feed.UserID)
@@ -136,6 +145,8 @@ func handlerFeeds(s *state, cmd command) error {
 			return fmt.Errorf("error getting user by id: %v", err)
 		}
 		fmt.Printf("UserName: 	%v\n", user.Name)
+		fmt.Println("================================")
 	}
+
 	return nil
 }
