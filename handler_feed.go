@@ -82,20 +82,14 @@ func handlerAgg(s *state, cmd command) error{
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error{
+func handlerAddFeed(s *state, cmd command, user database.User) error{
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("not enough args, usage <name> <url>")
 	}
 	name := cmd.Args[0]
 	url := cmd.Args[1]
 	fmt.Println("Getting current user ...")
-	currUserName := s.cfg.CurrentUserName
-	currUser, err := s.db.GetUser(context.Background(), currUserName)
-	if err != nil {
-		return fmt.Errorf("problem getting user id %v", err)
-	}
 
-	currUserID := currUser.ID
 	fmt.Println("Creating feed ...")
 	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:			uuid.New(),
@@ -103,7 +97,7 @@ func handlerAddFeed(s *state, cmd command) error{
 		UpdatedAt: 	time.Now().UTC(),
 		Name: name,
 		Url: url,
-		UserID: currUserID,
+		UserID: user.ID,
 	})
 
 	if err != nil{
@@ -116,7 +110,7 @@ func handlerAddFeed(s *state, cmd command) error{
 		ID: uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-		UserID: currUserID,
+		UserID: user.ID,
 		FeedID: feed.ID,
 	})
 
