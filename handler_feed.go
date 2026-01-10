@@ -75,12 +75,24 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error){
 
 
 func handlerAgg(s *state, cmd command) error{
-	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-	if err != nil{
-		return fmt.Errorf("error fetching feed: %v", err)
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: agg <parse duration w/ unit of time>")
 	}
-	fmt.Printf("%+v\n", feed)
-	return nil
+
+	timeToParse, err := time.ParseDuration(cmd.Args[0])
+	if err != nil{
+		return fmt.Errorf("unable to parse time for valid duration: %v", err)
+	}
+
+	fmt.Printf("Collecting feeds every %v\n", timeToParse)
+	ticker := time.NewTicker(timeToParse)
+	for ; ; <- ticker.C {
+		err = scrapeFeeds((s))
+		if err != nil {
+			fmt.Printf("error scraping feeds: %v", err)
+		}
+	}
+
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error{
