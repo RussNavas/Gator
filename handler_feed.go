@@ -161,3 +161,32 @@ func handlerFeeds(s *state, cmd command) error {
 
 	return nil
 }
+
+func scrapeFeeds(s *state) error {
+	fmt.Println("Scraping feeds ...")
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil{
+		return fmt.Errorf("unable to GetNextFeedToFetch")
+	}
+
+	feedRSS, err := fetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		return fmt.Errorf("unable to get feedRSS by URL")
+	}
+
+	feed, err = s.db.MarkFeedFetched(context.Background(), feed.ID)
+	if err != nil {
+		return fmt.Errorf("unable to MarkFeedFetched")
+	}
+
+	fmt.Println("=============== Feeds ==============")
+	for i, item := range feedRSS.Channel.Item {
+		fmt.Printf("|------Printing Feed Title %v ----------|\n", i)
+		fmt.Print("")
+		fmt.Printf("%v\n", item.Title)
+		fmt.Print("")
+		fmt.Println("----------------------------------")
+		fmt.Print("")
+	}
+	return nil
+}
