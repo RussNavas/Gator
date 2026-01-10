@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"Gator/internal/database"
 	"context"
 	"encoding/xml"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"time"
 	"github.com/google/uuid"
+	"strconv"
 )
 
 
@@ -191,14 +193,67 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("unable to MarkFeedFetched")
 	}
 
-	fmt.Println("=============== Feeds ==============")
-	for i, item := range feedRSS.Channel.Item {
-		fmt.Printf("|------Printing Feed Title %v ----------|\n", i)
-		fmt.Print("")
-		fmt.Printf("%v\n", item.Title)
-		fmt.Print("")
-		fmt.Println("----------------------------------")
-		fmt.Print("")
+    for _, item := range feedRSS.Channel.Item {
+        description := sql.NullString{
+            String: item.Description,
+            Valid:  item.Description != "",
+        }
+
+        t, err := time.Parse(time.RFC1123Z, item.PubDate)
+        if err != nil {
+            fmt.Printf("warning: parsing pubdate %q: %v\n", item.PubDate, err)
+            t = time.Time{}
+        }
+
+        if _, err := s.db.CreatePost(context.Background(), database.CreatePostParams{
+            ID:          uuid.New(),
+            CreatedAt:   time.Now().UTC(),
+            UpdatedAt:   time.Now().UTC(),
+            Title:       item.Title,
+            Url:         item.Link,
+            Description: description,
+            PublishedAt: t,
+            FeedID:      feed.ID,
+        }); err != nil {
+            return fmt.Errorf("CreatePost: %w", err)
+        }
+    }
+
+    return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	limit := 2
+	if len(cmd.Args) == 1 {
+		val, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("error converting limit to int, %v", err)
+		}
+		limit = val
+	}
+	posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit: int32(limit),
+	})
+
+	if err != nil{
+		return fmt.Errorf("error getting post for user: %v", err)
+	}
+
+	for i := 0; i < len(posts); i++{
+		printPost(posts[i])
 	}
 	return nil
+}
+
+func printPost(post database.GetPostsForUserRow){
+	fmt.Printf("ID: %v\n", post.ID)
+	fmt.Printf("Created At: %v\n", post.CreatedAt)
+	fmt.Printf("Updated At: %v\n\n", post.UpdatedAt)
+	fmt.Printf("--------------Title: %v--------\n", post.Title)
+	fmt.Printf("URL: %v\n\n", post.Url)
+	fmt.Println("Description:")
+	fmt.Printf("%v\n", post.Description)
+	fmt.Println("Published At: %v\n", post.PublishedAt)
+	fmt.Printf("Feed ID: %v\n", post.FeedID)
 }
