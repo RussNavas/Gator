@@ -73,6 +73,7 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error){
 	return &rssFeed, nil
 }
 
+
 func handlerAgg(s *state, cmd command) error{
 	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
 	if err != nil{
@@ -124,6 +125,7 @@ func handlerAddFeed(s *state, cmd command, user database.User) error{
 
 	return nil
 }
+
 
 func printFeed(feed database.Feed){
 	fmt.Printf("ID:  		%v\n", feed.ID)
