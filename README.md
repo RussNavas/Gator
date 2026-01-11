@@ -9,7 +9,7 @@ Gator supports multiple users on a single device via Config file.
 ## Installation
 Run the following in your command line:
 ```bash
-go install https://github.com/RussNavas/Gator@latest
+go install https://github.com/RussNavas/Gator
 ```
 ## Setup
 Create a .gatorconfig.json file in the root directory
